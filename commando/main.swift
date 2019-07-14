@@ -31,6 +31,17 @@ class OptionController: Codable {
 			print("error: Unknown type \(type ?? "(nil)").")
 		}
 	}
+	
+	var commandString: String {
+		var result = ""
+		if let name = name, !name.isEmpty {
+			result.append(" \(name)")
+		}
+		if let value = value, !value.isEmpty {
+			result.append(" \(value)")
+		}
+		return result
+	}
 }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -97,13 +108,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 		syntaxDescription.options.forEach { $0.create(in: self) }
 	
 		let okButton = addButton("OK")
-		okButton.target = NSApplication.shared
-		okButton.action = #selector(NSApplication.terminate(_:))
+		okButton.target = self
+		okButton.action = #selector(AppDelegate.doOK(_:))
 		okButton.keyEquivalent = "\r"
 
 		let cancelButton = addButton("Cancel")
-		okButton.target = NSApplication.shared
-		okButton.action = #selector(NSApplication.terminate(_:))
+		cancelButton.target = NSApplication.shared
+		cancelButton.action = #selector(NSApplication.terminate(_:))
 		cancelButton.keyEquivalent = "\u{1B}"
 	}
 	
@@ -171,6 +182,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 		panel.makeKeyAndOrderFront(self)
 		
 		NSApplication.shared.activate(ignoringOtherApps: true)
+	}
+	
+	@objc func doOK(_ sender: AnyObject) {
+		var command = syntaxDescription.command
+		for option in syntaxDescription.options {
+			command.append(option.commandString)
+		}
+		print(command)
+		
+		NSApplication.shared.terminate(self)
 	}
 }
 
