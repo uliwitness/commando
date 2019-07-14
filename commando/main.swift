@@ -6,12 +6,13 @@ class Options: Codable {
 	var options = [OptionController]()
 }
 
-class OptionController: Codable {
+class OptionController: NSObject, Codable {
 	var view: NSView!
 	var name: String?
 	var title: String?
 	var value: String?
 	var type: String?
+	var active: Bool = true
 	
 	private enum CodingKeys: String, CodingKey {
 		case name
@@ -26,7 +27,11 @@ class OptionController: Codable {
 		case "filepicker":
 			view = appDelegate.addPathField(title ?? "Label:", value: "")
 		case "checkbox":
-			view = appDelegate.addCheckBox(title ?? "Option")
+			let checkbox = appDelegate.addCheckBox(title ?? "Option")
+			checkbox.target = self
+			checkbox.action = #selector(doCheckboxClicked(_:))
+			active = value == "true"
+			view = checkbox
 		default:
 			print("error: Unknown type \(type ?? "(nil)").")
 		}
@@ -34,13 +39,19 @@ class OptionController: Codable {
 	
 	var commandString: String {
 		var result = ""
-		if let name = name, !name.isEmpty {
-			result.append(" \(name)")
-		}
-		if let value = value, !value.isEmpty {
-			result.append(" \(value)")
+		if active && ((type != "field" && type != "filepicker") || value != "") {
+			if let name = name, !name.isEmpty {
+				result.append(" \(name)")
+			}
+			if let value = value, !value.isEmpty {
+				result.append(" \(value)")
+			}
 		}
 		return result
+	}
+	
+	@objc func doCheckboxClicked(_ sender: NSButton) {
+		active = sender.state == .on
 	}
 }
 
@@ -56,12 +67,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 		app.mainMenu = mainMenu
 		
 		super.init()
-
-		panel = NSPanel(contentRect: NSRect(x: 100, y: 100, width: 512, height: 342), styleMask: [.titled], backing: .buffered, defer: true)
-		contentView = panel.contentView
-		contentView.setContentHuggingPriority(NSLayoutConstraint.Priority(750.0), for: .vertical)
-		contentView.setContentCompressionResistancePriority(NSLayoutConstraint.Priority(750.0), for: .horizontal)
-		contentView.setContentCompressionResistancePriority(NSLayoutConstraint.Priority(750.0), for: .vertical)
 
 		var dataURL: URL?
 
@@ -93,15 +98,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 			exit(1)
 		}
 
-		createMenus()
-
-		var myPSN = ProcessSerialNumber(highLongOfPSN: 0, lowLongOfPSN: UInt32(kCurrentProcess))
-		TransformProcessType(&myPSN, ProcessApplicationTransformState(kProcessTransformToForegroundApplication))
+		NSApplication.shared.setActivationPolicy(.regular)
 		
+		createMenus()
 		buildUIForDescription(dataURL!)
 	}
 	
 	func buildUIForDescription(_ url: URL) {
+		panel = NSPanel(contentRect: NSRect(x: 100, y: 100, width: 512, height: 342), styleMask: [.titled], backing: .buffered, defer: true)
+		contentView = panel.contentView
+		contentView.setContentHuggingPriority(NSLayoutConstraint.Priority(750.0), for: .vertical)
+		contentView.setContentCompressionResistancePriority(NSLayoutConstraint.Priority(750.0), for: .horizontal)
+		contentView.setContentCompressionResistancePriority(NSLayoutConstraint.Priority(750.0), for: .vertical)
+
 		let decoder = JSONDecoder()
 		syntaxDescription = try! decoder.decode(Options.self, from: Data(contentsOf: url))
 	
