@@ -38,7 +38,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 	var prevValue: NSView?
 	var contentView: NSView!
 	var panel: NSPanel!
-	var dataRead = ""
 	var lastMenu: NSMenu?
 	var syntaxDescription = Options()
 
@@ -53,37 +52,35 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 		contentView.setContentCompressionResistancePriority(NSLayoutConstraint.Priority(750.0), for: .horizontal)
 		contentView.setContentCompressionResistancePriority(NSLayoutConstraint.Priority(750.0), for: .vertical)
 
+		// Read -description argument
+		let dataURL: URL
 		if let jsonPath = UserDefaults.standard.string(forKey: "description") {
-			let dataURL = URL(fileURLWithPath: jsonPath)
-			let decoder = JSONDecoder()
-			syntaxDescription = try! decoder.decode(Options.self, from: Data(contentsOf: dataURL))
-			
-			syntaxDescription.options.forEach { $0.create(in: self) }
-			
-			let okButton = addButton("OK")
-			okButton.target = NSApplication.shared
-			okButton.action = #selector(NSApplication.terminate(_:))
-			okButton.keyEquivalent = "\r"
-
-			let cancelButton = addButton("Cancel")
-			okButton.target = NSApplication.shared
-			okButton.action = #selector(NSApplication.terminate(_:))
-			cancelButton.keyEquivalent = "\u{1B}"
-		} else {
-			FileHandle.standardInput.readabilityHandler = { fh in
-				let data = fh.readDataToEndOfFile()
-				if data.count > 0, let str = String(data: data, encoding: .utf8) {
-					DispatchQueue.main.async {
-						self.dataRead.append(str)
-						while let lineEnd = self.dataRead.firstIndex(of: "\n") {
-							let newLine = self.dataRead[..<lineEnd]
-							self.dataRead.removeSubrange(...lineEnd)
-							self.processOneLine(String(newLine))
-						}
-					}
-				}
+			dataURL = URL(fileURLWithPath: jsonPath)
+		} else if let commandName = CommandLine.arguments.last {
+			dataURL = URL(fileURLWithPath: "descriptions", isDirectory: true).appendingPathComponent("\(commandName).json")
+			if !FileManager.default.fileExists(atPath: dataURL.path) {
+				print("Couldn't find no description for command \(commandName).")
+				exit(1)
 			}
+		} else {
+			print("Missing command name or command description.")
+			exit(1)
 		}
+
+		let decoder = JSONDecoder()
+		syntaxDescription = try! decoder.decode(Options.self, from: Data(contentsOf: dataURL))
+	
+		syntaxDescription.options.forEach { $0.create(in: self) }
+	
+		let okButton = addButton("OK")
+		okButton.target = NSApplication.shared
+		okButton.action = #selector(NSApplication.terminate(_:))
+		okButton.keyEquivalent = "\r"
+
+		let cancelButton = addButton("Cancel")
+		okButton.target = NSApplication.shared
+		okButton.action = #selector(NSApplication.terminate(_:))
+		cancelButton.keyEquivalent = "\u{1B}"
 
 		let appMenu = addMenu("")
 		_ = appMenu.addItem(withTitle: "About Commando", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
@@ -127,35 +124,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 		var myPSN = ProcessSerialNumber(highLongOfPSN: 0, lowLongOfPSN: UInt32(kCurrentProcess))
 		TransformProcessType(&myPSN, ProcessApplicationTransformState(kProcessTransformToForegroundApplication))
 	}
-	
-	func processOneLine(_ cmd: String) {
-		let parts = cmd.split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true)
-		switch parts.first {
-			case "menu":
-				lastMenu = addMenu(String(parts[1]))
-			case "item":
-				if let lastMenu = lastMenu {
-					lastMenu.addItem(withTitle: String(parts[1]), action: nil, keyEquivalent: "")
-				}
-			case "field":
-				_ = addTextField(String(parts[1]), value: "")
-			case "filepicker":
-				_ = addPathField(String(parts[1]), value: "")
-			case "button":
-				_ = addButton(String(parts[1]))
-			case "defaultbutton", "okbutton":
-				let okButton = addButton(String(parts[1]))
-				okButton.keyEquivalent = "\r"
-			case "cancelbutton":
-				let cancelButton = addButton(String(parts[1]))
-				cancelButton.keyEquivalent = "\u{1B}"
-			case "checkbox":
-				_ = addCheckBox(String(parts[1]))
-			default:
-				print("Unknown command \(String(describing: parts.first))")
-		}
-	}
-	
+		
 	func applicationDidFinishLaunching(_ notification: Notification) {
 		panel.layoutIfNeeded()
 		panel.center()
