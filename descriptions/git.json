@@ -1,0 +1,11 @@
+{
+	"version": 1,
+	"command": "git reset",
+	"options": [
+		{
+			"type": "checkbox",
+			"name": "--hard",
+			"title": "Hard"
+		}
+	]
+}

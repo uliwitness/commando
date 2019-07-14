@@ -8,23 +8,30 @@
 
 /* Begin PBXBuildFile section */
 		552E261522D919D700E71F3E /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 552E261422D919D700E71F3E /* main.swift */; };
+		552E261E22D925EC00E71F3E /* NSViewPinning.swift in Sources */ = {isa = PBXBuildFile; fileRef = 552E261D22D925EC00E71F3E /* NSViewPinning.swift */; };
+		552E262222D9B3E000E71F3E /* descriptions in CopyFiles */ = {isa = PBXBuildFile; fileRef = 552E262122D9B3D200E71F3E /* descriptions */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		552E260F22D919D700E71F3E /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = /usr/share/man/man1/;
-			dstSubfolderSpec = 0;
+			buildActionMask = 12;
+			dstPath = "";
+			dstSubfolderSpec = 16;
 			files = (
+				552E262222D9B3E000E71F3E /* descriptions in CopyFiles */,
 			);
-			runOnlyForDeploymentPostprocessing = 1;
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		552E261122D919D700E71F3E /* commando */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = commando; sourceTree = BUILT_PRODUCTS_DIR; };
 		552E261422D919D700E71F3E /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		552E261C22D91D4D00E71F3E /* Commando-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Commando-Info.plist"; sourceTree = "<group>"; };
+		552E261D22D925EC00E71F3E /* NSViewPinning.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSViewPinning.swift; sourceTree = "<group>"; };
+		552E261F22D9ABB200E71F3E /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		552E262122D9B3D200E71F3E /* descriptions */ = {isa = PBXFileReference; lastKnownFileType = folder; path = descriptions; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -41,6 +48,8 @@
 		552E260822D919D700E71F3E = {
 			isa = PBXGroup;
 			children = (
+				552E261F22D9ABB200E71F3E /* README.md */,
+				552E262122D9B3D200E71F3E /* descriptions */,
 				552E261322D919D700E71F3E /* commando */,
 				552E261222D919D700E71F3E /* Products */,
 			);
@@ -58,6 +67,8 @@
 			isa = PBXGroup;
 			children = (
 				552E261422D919D700E71F3E /* main.swift */,
+				552E261D22D925EC00E71F3E /* NSViewPinning.swift */,
+				552E261C22D91D4D00E71F3E /* Commando-Info.plist */,
 			);
 			path = commando;
 			sourceTree = "<group>";
@@ -120,6 +131,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				552E261522D919D700E71F3E /* main.swift in Sources */,
+				552E261E22D925EC00E71F3E /* NSViewPinning.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -245,7 +257,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
 				DEVELOPMENT_TEAM = RCKXACKVZS;
+				INFOPLIST_FILE = "commando/Commando-Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 			};
@@ -255,7 +269,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
 				DEVELOPMENT_TEAM = RCKXACKVZS;
+				INFOPLIST_FILE = "commando/Commando-Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 			};
