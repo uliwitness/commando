@@ -52,23 +52,47 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 		contentView.setContentCompressionResistancePriority(NSLayoutConstraint.Priority(750.0), for: .horizontal)
 		contentView.setContentCompressionResistancePriority(NSLayoutConstraint.Priority(750.0), for: .vertical)
 
+		var dataURL: URL?
+
 		// Read -description argument
-		let dataURL: URL
 		if let jsonPath = UserDefaults.standard.string(forKey: "description") {
 			dataURL = URL(fileURLWithPath: jsonPath)
-		} else if let commandName = CommandLine.arguments.last {
-			dataURL = URL(fileURLWithPath: "descriptions", isDirectory: true).appendingPathComponent("\(commandName).json")
-			if !FileManager.default.fileExists(atPath: dataURL.path) {
-				print("Couldn't find no description for command \(commandName).")
+		} else if let commandName = ProcessInfo.processInfo.arguments.last {
+			let pathString = ProcessInfo.processInfo.environment["COMMANDO_PATH"]
+			var paths: [String] = pathString?.split(separator: ":").map({ String($0) }) ?? []
+			
+			if paths.isEmpty {
+				paths = ["/usr/local/etc/commando", "/etc/commando", "\(Bundle.main.executableURL!.deletingLastPathComponent().path)/descriptions"]
+			}
+			
+			for path in paths {
+				let url = URL(fileURLWithPath: path).appendingPathComponent("\(commandName).json")
+				if FileManager.default.fileExists(atPath: url.path) {
+					dataURL = url
+					break
+				}
+			}
+			
+			if dataURL == nil {
+				print("Couldn't find a description for command \(commandName).")
 				exit(1)
 			}
 		} else {
-			print("Missing command name or command description.")
+			print("Missing command name or command -description argument.")
 			exit(1)
 		}
 
+		createMenus()
+
+		var myPSN = ProcessSerialNumber(highLongOfPSN: 0, lowLongOfPSN: UInt32(kCurrentProcess))
+		TransformProcessType(&myPSN, ProcessApplicationTransformState(kProcessTransformToForegroundApplication))
+		
+		buildUIForDescription(dataURL!)
+	}
+	
+	func buildUIForDescription(_ url: URL) {
 		let decoder = JSONDecoder()
-		syntaxDescription = try! decoder.decode(Options.self, from: Data(contentsOf: dataURL))
+		syntaxDescription = try! decoder.decode(Options.self, from: Data(contentsOf: url))
 	
 		syntaxDescription.options.forEach { $0.create(in: self) }
 	
@@ -81,7 +105,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 		okButton.target = NSApplication.shared
 		okButton.action = #selector(NSApplication.terminate(_:))
 		cancelButton.keyEquivalent = "\u{1B}"
-
+	}
+	
+	func createAppMenu() {
 		let appMenu = addMenu("")
 		_ = appMenu.addItem(withTitle: "About Commando", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
 		_ = appMenu.addItem(NSMenuItem.separator())
@@ -98,7 +124,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 		_ = appMenu.addItem(withTitle: "Show All", action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
 		_ = appMenu.addItem(NSMenuItem.separator())
 		_ = appMenu.addItem(withTitle: "Quit Commando", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-		
+	}
+	
+	func createFileMenu() {
 		let fileMenu = addMenu("File")
 		_ = fileMenu.addItem(withTitle: "New", action: nil, keyEquivalent: "n")
 		_ = fileMenu.addItem(NSMenuItem.separator())
@@ -109,7 +137,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 		recentsMenuItem.submenu = recentsMenu
 		_ = fileMenu.addItem(NSMenuItem.separator())
 		_ = fileMenu.addItem(withTitle: "Close Window", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
-
+	}
+	
+	func createEditMenu() {
 		let editMenu = addMenu("Edit")
 		_ = editMenu.addItem(withTitle: "Undo", action: NSSelectorFromString("undo:"), keyEquivalent: "z")
 		_ = editMenu.addItem(withTitle: "Redo", action: NSSelectorFromString("redo:"), keyEquivalent: "Z")
@@ -120,11 +150,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 		_ = editMenu.addItem(withTitle: "Clear", action: NSSelectorFromString("delete:"), keyEquivalent: "")
 		_ = editMenu.addItem(NSMenuItem.separator())
 		_ = editMenu.addItem(withTitle: "Select All", action: NSSelectorFromString("selectAll:"), keyEquivalent: "a")
-
-		var myPSN = ProcessSerialNumber(highLongOfPSN: 0, lowLongOfPSN: UInt32(kCurrentProcess))
-		TransformProcessType(&myPSN, ProcessApplicationTransformState(kProcessTransformToForegroundApplication))
 	}
-		
+
+	func createHelpMenu() {
+		let helpMenu = addMenu("Help")
+		NSApplication.shared.helpMenu = helpMenu
+		_ = helpMenu.addItem(withTitle: "Commando Help", action: NSSelectorFromString("showHelp:"), keyEquivalent: "?")
+	}
+
+	func createMenus() {
+		createAppMenu()
+		createFileMenu()
+		createEditMenu()
+		createHelpMenu()
+	}
+	
 	func applicationDidFinishLaunching(_ notification: Notification) {
 		panel.layoutIfNeeded()
 		panel.center()
@@ -132,7 +172,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 		
 		NSApplication.shared.activate(ignoringOtherApps: true)
 	}
-	
+}
+
+extension AppDelegate {
 	func addMenu(_ title: String) -> NSMenu {
 		let owningItem = mainMenu.addItem(withTitle: title, action: nil, keyEquivalent: "")
 		let actualMenu = NSMenu(title: title)
