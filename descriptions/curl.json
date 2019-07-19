@@ -1,0 +1,41 @@
+{
+	"version": 1,
+	"command": "curl",
+	"options": [
+		{
+			"type": "text",
+			"name": "--abstract-unix-socket",
+			"title": "Abstract Unix Socket Path"
+		},
+		{
+			"type": "boolean",
+			"name": "--anyauth",
+			"title": "Determine Authentication Automatically"
+		},
+		{
+			"type": "boolean",
+			"name": "--basic",
+			"title": "Use Basic Auth"
+		},
+		{
+			"type": "file",
+			"name": "--cacert",
+			"title": "Certificate"
+		},
+		{
+			"type": "directory",
+			"name": "--capath",
+			"title": "Certificates Directory"
+		},
+		{
+			"type": "boolean",
+			"name": "--append",
+			"title": "Append"
+		},
+		{
+			"type": "text",
+			"name": "",
+			"title": "URL"
+		}
+	]
+}

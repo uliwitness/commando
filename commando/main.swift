@@ -7,44 +7,161 @@ class Options: Codable {
 }
 
 class OptionController: NSObject, Codable {
-	var view: NSView!
 	var name: String?
 	var title: String?
 	var value: String?
 	var type: String?
-	var active: Bool = true
-	
+	var active: Bool = false
+	var field: NSTextField?
+	var checkbox: NSButton?
+
 	private enum CodingKeys: String, CodingKey {
 		case name
 		case title
 		case type
 	}
 	
-	func create(in appDelegate: AppDelegate) {
+	func create(in contentView: NSView, prevValue: inout NSView?) {
 		switch(type) {
-		case "field":
-			view = appDelegate.addTextField(title ?? "Label:", value: value ?? "")
-		case "filepicker":
-			view = appDelegate.addPathField(title ?? "Label:", value: "")
-		case "checkbox":
-			let checkbox = appDelegate.addCheckBox(title ?? "Option")
-			checkbox.target = self
-			checkbox.action = #selector(doCheckboxClicked(_:))
+		case "text":
+			field = addTextField(title ?? "Label:", value: value ?? "", to: contentView, prevValue: &prevValue)
+			active = true
+		case "file":
+			let views = addPathField(title ?? "Label:", value: "", to: contentView, prevValue: &prevValue)
+			views.button.action = #selector(OptionController.pickFile(_:))
+			field = views.field
+			active = true
+		case "files":
+			let views = addPathField(title ?? "Label:", value: "", to: contentView, prevValue: &prevValue)
+			views.button.action = #selector(OptionController.pickFiles(_:))
+			field = views.field
+			active = true
+		case "directory":
+			let views = addPathField(title ?? "Label:", value: "", to: contentView, prevValue: &prevValue)
+			views.button.action = #selector(OptionController.pickFolder(_:))
+			field = views.field
+			active = true
+		case "directories":
+			let views = addPathField(title ?? "Label:", value: "", to: contentView, prevValue: &prevValue)
+			views.button.action = #selector(OptionController.pickFolders(_:))
+			field = views.field
+			active = true
+		case "boolean":
+			checkbox = addCheckBox(title ?? "Option", to: contentView, prevValue: &prevValue)
+			checkbox?.target = self
+			checkbox?.action = #selector(OptionController.doCheckboxClicked(_:))
 			active = value == "true"
-			view = checkbox
+			checkbox?.state = active ? .on : .off
 		default:
 			print("error: Unknown type \(type ?? "(nil)").")
 		}
 	}
 	
+	func readFromUI() {
+		if let field = field {
+			value = field.stringValue
+		} else if type == "boolean" {
+			active = (checkbox?.state ?? .off) == .on
+		}
+	}
+	
+	@objc func pickFile(_ sender: AnyObject) {
+		let picker = NSOpenPanel()
+		picker.canChooseFiles = true
+		picker.canChooseDirectories = false
+		picker.allowsMultipleSelection = false
+		picker.begin { response in
+			guard response == .OK else { return }
+			
+			self.value = picker.url?.path
+			self.field?.stringValue = self.value ?? ""
+		}
+	}
+	
+	@objc func pickFiles(_ sender: AnyObject) {
+		let picker = NSOpenPanel()
+		picker.canChooseFiles = true
+		picker.canChooseDirectories = false
+		picker.allowsMultipleSelection = true
+		picker.begin { response in
+			guard response == .OK else { return }
+			
+			self.value = "\"\(picker.urls.map { $0.path }.joined(separator: "\" \""))\""
+			self.field?.stringValue = self.value ?? ""
+		}
+	}
+	
+	@objc func pickFolder(_ sender: AnyObject) {
+		let picker = NSOpenPanel()
+		picker.canChooseFiles = false
+		picker.canChooseDirectories = true
+		picker.allowsMultipleSelection = true
+		picker.begin { response in
+			guard response == .OK else { return }
+			
+			self.value = picker.url?.path
+			self.field?.stringValue = self.value ?? ""
+		}
+	}
+	
+	@objc func pickFolders(_ sender: AnyObject) {
+		let picker = NSOpenPanel()
+		picker.canChooseFiles = false
+		picker.canChooseDirectories = true
+		picker.allowsMultipleSelection = false
+		picker.begin { response in
+			guard response == .OK else { return }
+			
+			self.value = "\"\(picker.urls.map { $0.path }.joined(separator: "\" \""))\""
+			self.field?.stringValue = self.value ?? ""
+		}
+	}
+
+	private func addTextField(_ label: String, value: String = "", to contentView: NSView, prevValue: inout NSView?) -> NSTextField {
+		let label1 = NSTextField(labelWithString: label)
+		label1.alignment = .right
+		let editField1 = NSTextField(string: value)
+		contentView.pin(label: label1, value: editField1, prevValue: &prevValue, insets: prevValue == nil ? pinToTop : pinToPrevious)
+		return editField1
+	}
+	
+	private func addPathField(_ label: String, value: String = "", to contentView: NSView, prevValue: inout NSView?) -> (field: NSTextField, button: NSButton) {
+		let label1 = NSTextField(labelWithString: label)
+		label1.alignment = .right
+		let editField1 = NSTextField(string: value)
+		var insets = prevValue == nil ? pinToTop : pinToPrevious
+		insets.right = dontPin
+		contentView.pin(label: label1, value: editField1, prevValue: &prevValue, insets: insets)
+		let chooseButton = NSButton(title: "Choose…", target: nil, action: nil)
+		chooseButton.translatesAutoresizingMaskIntoConstraints = false
+		contentView.addSubview(chooseButton)
+		chooseButton.leadingAnchor.constraint(equalTo: editField1.trailingAnchor, constant: 8.0).isActive = true
+		chooseButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20.0).isActive = true
+		chooseButton.firstBaselineAnchor.constraint(equalTo: editField1.firstBaselineAnchor).isActive = true
+		chooseButton.target = self
+		return (button: chooseButton, field: editField1)
+	}
+	
+	private func addCheckBox(_ label: String, to contentView: NSView, prevValue: inout NSView?) -> NSButton {
+		let label3 = NSView()
+		let checkBox3 = NSButton(checkboxWithTitle: label, target: nil, action: nil)
+		checkBox3.setContentHuggingPriority(NSLayoutConstraint.Priority(800), for: .vertical)
+		contentView.pin(label: label3, value: checkBox3, prevValue: &prevValue, insets: prevValue == nil ? pinToTop : pinToPrevious)
+		return checkBox3
+	}
+
+	private func isTextFieldType() -> Bool {
+		return type == "text" || type == "file" || type == "files" || type == "directory" || type == "directories"
+	}
+	
 	var commandString: String {
 		var result = ""
-		if active && ((type != "field" && type != "filepicker") || value != "") {
+		if active && (!isTextFieldType() || (value ?? "") != "") {
 			if let name = name, !name.isEmpty {
 				result.append(" \(name)")
 			}
 			if let value = value, !value.isEmpty {
-				result.append(" \(value)")
+				result.append(" \"\(value)\"")
 			}
 		}
 		return result
@@ -64,7 +181,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 	var syntaxDescription = Options()
 
 	override init() {
-		app.mainMenu = mainMenu
+		NSApplication.shared.mainMenu = mainMenu
 		
 		super.init()
 
@@ -114,7 +231,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 		let decoder = JSONDecoder()
 		syntaxDescription = try! decoder.decode(Options.self, from: Data(contentsOf: url))
 	
-		syntaxDescription.options.forEach { $0.create(in: self) }
+		syntaxDescription.options.forEach { $0.create(in: self.contentView, prevValue: &self.prevValue) }
 	
 		let okButton = addButton("OK")
 		okButton.target = self
@@ -194,6 +311,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 	}
 	
 	@objc func doOK(_ sender: AnyObject) {
+		syntaxDescription.options.forEach { $0.readFromUI() }
+
 		var command = syntaxDescription.command
 		for option in syntaxDescription.options {
 			command.append(option.commandString)
@@ -205,44 +324,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 extension AppDelegate {
-	func addMenu(_ title: String) -> NSMenu {
+	private func addMenu(_ title: String) -> NSMenu {
 		let owningItem = mainMenu.addItem(withTitle: title, action: nil, keyEquivalent: "")
 		let actualMenu = NSMenu(title: title)
 		owningItem.submenu = actualMenu
 		
 		return actualMenu
-	}
-	
-	func addTextField(_ label: String, value: String = "") -> NSTextField {
-		let label1 = NSTextField(labelWithString: label)
-		label1.alignment = .right
-		let editField1 = NSTextField(string: value)
-		contentView.pin(label: label1, value: editField1, prevValue: &prevValue, insets: prevValue == nil ? pinToTop : pinToPrevious)
-		return editField1
-	}
-	
-	func addPathField(_ label: String, value: String = "") -> NSTextField {
-		let label1 = NSTextField(labelWithString: label)
-		label1.alignment = .right
-		let editField1 = NSTextField(string: value)
-		var insets = prevValue == nil ? pinToTop : pinToPrevious
-		insets.right = dontPin
-		contentView.pin(label: label1, value: editField1, prevValue: &prevValue, insets: insets)
-		let chooseButton = NSButton(title: "Choose…", target: nil, action: nil)
-		chooseButton.translatesAutoresizingMaskIntoConstraints = false
-		contentView.addSubview(chooseButton)
-		chooseButton.leadingAnchor.constraint(equalTo: editField1.trailingAnchor, constant: 8.0).isActive = true
-		chooseButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20.0).isActive = true
-		chooseButton.firstBaselineAnchor.constraint(equalTo: editField1.firstBaselineAnchor).isActive = true
-		return editField1
-	}
-	
-	func addCheckBox(_ label: String) -> NSButton {
-		let label3 = NSView()
-		let checkBox3 = NSButton(checkboxWithTitle: label, target: nil, action: nil)
-		checkBox3.setContentHuggingPriority(NSLayoutConstraint.Priority(800), for: .vertical)
-		contentView.pin(label: label3, value: checkBox3, prevValue: &prevValue, insets: prevValue == nil ? pinToTop : pinToPrevious)
-		return checkBox3
 	}
 	
 	func addButton(_ title: String) -> NSButton {

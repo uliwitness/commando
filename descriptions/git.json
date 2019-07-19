@@ -3,7 +3,7 @@
 	"command": "git reset",
 	"options": [
 		{
-			"type": "checkbox",
+			"type": "boolean",
 			"name": "--hard",
 			"title": "Hard"
 		}
