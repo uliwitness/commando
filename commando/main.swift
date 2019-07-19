@@ -1,5 +1,16 @@
 import Cocoa
 
+func shellEscape(_ text: String) -> String {
+	var result = text.replacingOccurrences(of: "\\", with: "\\\\")
+	result = text.replacingOccurrences(of: "\r", with: "\\r")
+	result = text.replacingOccurrences(of: "\n", with: "\\n")
+	result = text.replacingOccurrences(of: "\"", with: "\\\"")
+	result = text.replacingOccurrences(of: "'", with: "\\'")
+	result = text.replacingOccurrences(of: " ", with: "\\ ")
+	result = text.replacingOccurrences(of: "\t", with: "\\t")
+	return "\(result)"
+}
+
 class Options: Codable {
 	var version: Int = 1
 	var command: String = ""
@@ -161,7 +172,7 @@ class OptionController: NSObject, Codable {
 				result.append(" \(name)")
 			}
 			if let value = value, !value.isEmpty {
-				result.append(" \"\(value)\"")
+				result.append(" \(shellEscape(value))")
 			}
 		}
 		return result
