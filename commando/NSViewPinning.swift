@@ -8,7 +8,7 @@
 
 import Cocoa
 
-let dontPin = CGFloat(Double.leastNormalMagnitude)
+let dontPin = CGFloat.leastNormalMagnitude
 let pinToTop = NSEdgeInsets(top: 20.0, left: 20.0, bottom: dontPin, right: 20.0)
 let pinToPrevious = NSEdgeInsets(top: 12.0, left: 20.0, bottom: dontPin, right: 20.0)
 let pinToBottom = NSEdgeInsets(top: 12.0, left: 20.0, bottom: 20.0, right: 20.0)
